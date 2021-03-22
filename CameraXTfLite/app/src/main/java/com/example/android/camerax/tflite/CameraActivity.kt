@@ -19,6 +19,7 @@ package com.example.android.camerax.tflite
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Matrix
@@ -29,10 +30,7 @@ import android.util.Size
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.AspectRatio
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
@@ -51,6 +49,7 @@ import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
 import org.tensorflow.lite.support.image.ops.Rot90Op
+import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executors
 import kotlin.math.min
 import kotlin.random.Random
@@ -61,6 +60,8 @@ class CameraActivity : AppCompatActivity() {
 
     private lateinit var container: ConstraintLayout
     private lateinit var bitmapBuffer: Bitmap
+    private lateinit var objectSearch: String
+
 
     private val executor = Executors.newSingleThreadExecutor()
     private val permissions = listOf(Manifest.permission.CAMERA)
@@ -108,112 +109,122 @@ class CameraActivity : AppCompatActivity() {
         setContentView(R.layout.activity_camera)
         container = findViewById(R.id.camera_container)
 
-        camera_capture_button.setOnClickListener {
+        val bundle = intent.extras
+        if (bundle != null){
+             objectSearch =  bundle.getString("ObjectSearch").toString()
+        }
 
-            // Disable all camera controls
-            it.isEnabled = false
 
-            if (pauseAnalysis) {
-                // If image analysis is in paused state, resume it
-                pauseAnalysis = false
-                image_predicted.visibility = View.GONE
+    }
 
-            } else {
-                // Otherwise, pause image analysis and freeze image
-                pauseAnalysis = true
-                val matrix = Matrix().apply {
-                    postRotate(imageRotationDegrees.toFloat())
-                    if (isFrontFacing) postScale(-1f, 1f)
-                }
-                val uprightImage = Bitmap.createBitmap(
-                    bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height, matrix, true)
-                image_predicted.setImageBitmap(uprightImage)
-                image_predicted.visibility = View.VISIBLE
+    private fun stopAnalysisAndShowFrame() {
+
+        if(!pauseAnalysis) {
+            val bs = ByteArrayOutputStream()
+            // Otherwise, pause image analysis and freeze image
+            pauseAnalysis = true
+            val matrix = Matrix().apply {
+                postRotate(imageRotationDegrees.toFloat())
+                if (isFrontFacing) postScale(-1f, 1f)
             }
+            val bmp = Bitmap.createBitmap(
+                    bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height, matrix, true)
 
-            // Re-enable camera controls
-            it.isEnabled = true
+            bmp.compress(Bitmap.CompressFormat.PNG, 100, bs)
+            val intent = Intent(this, ShowImageActivity::class.java)
+            intent.putExtra("objectImage", bs.toByteArray())
+            startActivity(intent)
+            finish()
         }
     }
 
+
+
+
     /** Declare and bind preview and analysis use cases */
     @SuppressLint("UnsafeExperimentalUsageError")
-    private fun bindCameraUseCases() = view_finder.post {
+    private fun bindCameraUseCases() {
+        view_finder.post {
 
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        cameraProviderFuture.addListener(Runnable {
+            val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
+            cameraProviderFuture.addListener(Runnable {
 
-            // Camera provider is now guaranteed to be available
-            val cameraProvider = cameraProviderFuture.get()
+                // Camera provider is now guaranteed to be available
+                val cameraProvider = cameraProviderFuture.get()
 
-            // Set up the view finder use case to display camera preview
-            val preview = Preview.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(view_finder.display.rotation)
-                .build()
+                // Set up the view finder use case to display camera preview
+                val preview = Preview.Builder()
+                        .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                        .setTargetRotation(view_finder.display.rotation)
+                        .build()
 
-            // Set up the image analysis use case which will process frames in real time
-            val imageAnalysis = ImageAnalysis.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(view_finder.display.rotation)
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
+                // Set up the image analysis use case which will process frames in real time
+                val imageAnalysis = ImageAnalysis.Builder()
+                        .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                        .setTargetRotation(view_finder.display.rotation)
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
 
-            var frameCounter = 0
-            var lastFpsTimestamp = System.currentTimeMillis()
-            val converter = YuvToRgbConverter(this)
+                var frameCounter = 0
+                var lastFpsTimestamp = System.currentTimeMillis()
+                val converter = YuvToRgbConverter(this)
 
-            imageAnalysis.setAnalyzer(executor, ImageAnalysis.Analyzer { image ->
-                if (!::bitmapBuffer.isInitialized) {
-                    // The image rotation and RGB image buffer are initialized only once
-                    // the analyzer has started running
-                    imageRotationDegrees = image.imageInfo.rotationDegrees
-                    bitmapBuffer = Bitmap.createBitmap(
-                        image.width, image.height, Bitmap.Config.ARGB_8888)
-                }
 
-                // Early exit: image analysis is in paused state
-                if (pauseAnalysis) {
-                    image.close()
-                    return@Analyzer
-                }
 
-                // Convert the image to RGB and place it in our shared buffer
-                image.use { converter.yuvToRgb(image.image!!, bitmapBuffer) }
+                imageAnalysis.setAnalyzer(executor, ImageAnalysis.Analyzer { image ->
+                    if (!::bitmapBuffer.isInitialized) {
+                        // The image rotation and RGB image buffer are initialized only once
+                        // the analyzer has started running
+                        imageRotationDegrees = image.imageInfo.rotationDegrees
+                        bitmapBuffer = Bitmap.createBitmap(
+                                image.width, image.height, Bitmap.Config.ARGB_8888)
+                    }
 
-                // Process the image in Tensorflow
-                val tfImage =  tfImageProcessor.process(tfImageBuffer.apply { load(bitmapBuffer) })
+                    // Early exit: image analysis is in paused state
+                    if (pauseAnalysis) {
+                        image.close()
+                        imageAnalysis.clearAnalyzer()
+                        return@Analyzer
+                    }
 
-                // Perform the object detection for the current frame
-                val predictions = detector.predict(tfImage)
+                    // Convert the image to RGB and place it in our shared buffer
+                    image.use { converter.yuvToRgb(image.image!!, bitmapBuffer) }
 
-                // Report only the top prediction
-                reportPrediction(predictions.maxBy { it.score })
+                    // Process the image in Tensorflow
+                    val tfImage = tfImageProcessor.process(tfImageBuffer.apply { load(bitmapBuffer) })
 
-                // Compute the FPS of the entire pipeline
-                val frameCount = 10
-                if (++frameCounter % frameCount == 0) {
-                    frameCounter = 0
-                    val now = System.currentTimeMillis()
-                    val delta = now - lastFpsTimestamp
-                    val fps = 1000 * frameCount.toFloat() / delta
-                    Log.d(TAG, "FPS: ${"%.02f".format(fps)}")
-                    lastFpsTimestamp = now
-                }
-            })
+                    // Perform the object detection for the current frame
+                    val predictions = detector.predict(tfImage)
 
-            // Create a new camera selector each time, enforcing lens facing
-            val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+                    // Report only the top prediction
+                    reportPrediction(predictions.maxBy { it.score })
 
-            // Apply declared configs to CameraX using the same lifecycle owner
-            cameraProvider.unbindAll()
-            val camera = cameraProvider.bindToLifecycle(
-                this as LifecycleOwner, cameraSelector, preview, imageAnalysis)
 
-            // Use the camera object to link our preview use case with the view
-            preview.setSurfaceProvider(view_finder.surfaceProvider)
+                    // Compute the FPS of the entire pipeline
+                    val frameCount = 10
+                    if (++frameCounter % frameCount == 0) {
+                        frameCounter = 0
+                        val now = System.currentTimeMillis()
+                        val delta = now - lastFpsTimestamp
+                        val fps = 1000 * frameCount.toFloat() / delta
+                        Log.d(TAG, "FPS: ${"%.02f".format(fps)}")
+                        lastFpsTimestamp = now
+                    }
+                })
 
-        }, ContextCompat.getMainExecutor(this))
+                // Create a new camera selector each time, enforcing lens facing
+                val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+
+                // Apply declared configs to CameraX using the same lifecycle owner
+                cameraProvider.unbindAll()
+                val camera = cameraProvider.bindToLifecycle(
+                        this as LifecycleOwner, cameraSelector, preview, imageAnalysis)
+
+                // Use the camera object to link our preview use case with the view
+                preview.setSurfaceProvider(view_finder.surfaceProvider)
+
+            }, ContextCompat.getMainExecutor(this))
+        }
     }
 
     private fun reportPrediction(
@@ -221,7 +232,7 @@ class CameraActivity : AppCompatActivity() {
     ) = view_finder.post {
 
         // Early exit: if prediction is not good enough, don't report it
-        if (prediction == null || prediction.score < ACCURACY_THRESHOLD) {
+        if (prediction == null || prediction.score < ACCURACY_THRESHOLD || prediction.label != objectSearch) {
             box_prediction.visibility = View.GONE
             text_prediction.visibility = View.GONE
             return@post
@@ -242,7 +253,13 @@ class CameraActivity : AppCompatActivity() {
         // Make sure all UI elements are visible
         box_prediction.visibility = View.VISIBLE
         text_prediction.visibility = View.VISIBLE
+        stopAnalysisAndShowFrame()
+
+
+
     }
+
+
 
     /**
      * Helper function used to map the coordinates for objects coming out of
@@ -300,6 +317,7 @@ class CameraActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(
                 this, permissions.toTypedArray(), permissionsRequestCode)
         } else {
+            pauseAnalysis = false
             bindCameraUseCases()
         }
     }
@@ -311,6 +329,7 @@ class CameraActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == permissionsRequestCode && hasPermissions(this)) {
+            pauseAnalysis = false
             bindCameraUseCases()
         } else {
             finish() // If we don't have the required permissions, we can't run
