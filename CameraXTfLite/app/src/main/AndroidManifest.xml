@@ -14,8 +14,8 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         tools:ignore="AllowBackup,GoogleAppIndexingWarning">
-        <activity android:name="com.example.android.camerax.tflite.ShowImageActivity"></activity>
-        <activity android:name="com.example.android.camerax.tflite.SearchActivity">
+        <activity android:name="com.example.android.camerax.tflite.View.ShowImageActivity"></activity>
+        <activity android:name="com.example.android.camerax.tflite.View.SearchActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -23,7 +23,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.example.android.camerax.tflite.CameraActivity"
+            android:name="com.example.android.camerax.tflite.View.CameraActivity"
             android:rotationAnimation="seamless"
             tools:targetApi="O"></activity>
     </application>

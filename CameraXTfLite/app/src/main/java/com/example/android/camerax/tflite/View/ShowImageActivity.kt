@@ -1,7 +1,6 @@
-package com.example.android.camerax.tflite
+package com.example.android.camerax.tflite.View
 
 import android.content.Intent
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -24,8 +23,6 @@ class ShowImageActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onClick(v: View) {
         if(v.id == R.id.newSearch){
-            val intent = Intent(this,SearchActivity::class.java)
-            startActivity(intent)
             finish()
 
         }

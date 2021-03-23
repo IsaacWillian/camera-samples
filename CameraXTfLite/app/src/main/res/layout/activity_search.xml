@@ -4,42 +4,52 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@android:color/holo_blue_dark"
+
     android:padding="16dp"
-    tools:context="com.example.android.camerax.tflite.SearchActivity">
+    tools:context="com.example.android.camerax.tflite.View.SearchActivity">
+
 
     <TextView
+        android:id="@+id/title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Enter the object for search"
+        android:layout_marginBottom="24dp"
+        android:text="Object name for search"
         android:textAlignment="center"
-        app:layout_constraintBottom_toTopOf="@id/textSearch"
-        android:paddingBottom="16dp"
-        android:textSize="24sp"
-        />
+        android:textColor="@android:color/background_light"
+        android:textSize="32sp"
+        app:layout_constraintBottom_toTopOf="@id/editObjectName"
+        tools:layout_editor_absoluteX="16dp" />
+
     <EditText
-        android:id="@+id/textSearch"
+        android:id="@+id/editObjectName"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:background="@android:color/background_light"
+        android:padding="8dp"
+        android:hint="Name"
         android:inputType="text"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        android:hint="Object for search"
         android:textAlignment="center"
-        />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/btnSearch"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:backgroundTint="#2196F3"
+        android:layout_marginTop="16dp"
+        android:backgroundTint="@android:color/background_light"
+        android:drawableEnd="@drawable/ic_baseline_search_24"
         android:text="Search"
-        android:textColor="#EFEFEF"
+        android:textColor="@android:color/holo_blue_dark"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/textSearch"
 
-        />
+        app:layout_constraintTop_toBottomOf="@id/editObjectName" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

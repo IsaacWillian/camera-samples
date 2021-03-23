@@ -1,6 +1,5 @@
-package com.example.android.camerax.tflite
+package com.example.android.camerax.tflite.View
 
-import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -18,10 +17,10 @@ class SearchActivity : AppCompatActivity(), View.OnClickListener {
 
     override fun onClick(v: View) {
         if(v.id == R.id.btnSearch){
-            val textSearch = textSearch.text.toString().toLowerCase()
-            val intent = Intent(this,CameraActivity::class.java)
+            val objectName = editObjectName.text.toString().toLowerCase()
+            val intent = Intent(this, CameraActivity::class.java)
             val bundle = Bundle()
-            bundle.putString("ObjectSearch",textSearch)
+            bundle.putString("ObjectSearch",objectName)
             intent.putExtras(bundle)
             startActivity(intent)
 
