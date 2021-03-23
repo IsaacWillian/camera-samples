@@ -75,6 +75,7 @@ class CameraActivity : AppCompatActivity() {
 
     //Define observer for Livedata
     private fun observer(){
+        // If prediction is not null, show the box and text
         viewModel.predictionSucess.observe(this, Observer{
             if(it != null){
 
@@ -100,6 +101,7 @@ class CameraActivity : AppCompatActivity() {
 
         })
 
+        //Pass frame containing object for another activity
         viewModel.bitmapToShow.observe(this, Observer{
 
             val bs = ByteArrayOutputStream()
@@ -114,6 +116,10 @@ class CameraActivity : AppCompatActivity() {
 
     }
 
+    /**
+     * Helper function used to map the coordinates for objects coming out of
+     * the model into the coordinates that the user sees on the screen.
+     */
     private fun mapOutputCoordinates(location: RectF): RectF {
 
         // Step 1: map location to the preview coordinates

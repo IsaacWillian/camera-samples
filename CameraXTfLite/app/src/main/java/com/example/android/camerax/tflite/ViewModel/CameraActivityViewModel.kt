@@ -107,7 +107,7 @@ class CameraActivityViewModel(application: Application) : AndroidViewModel(appli
         view.post {
 
             val cameraProviderFuture = ProcessCameraProvider.getInstance(mContext)
-            cameraProviderFuture.addListener(Runnable {
+            cameraProviderFuture.addListener({
 
                 // Camera provider is now guaranteed to be available
                 val cameraProvider = cameraProviderFuture.get()
@@ -157,7 +157,7 @@ class CameraActivityViewModel(application: Application) : AndroidViewModel(appli
                     val predictions = detector.predict(tfImage)
 
                     // Report only the top prediction
-                    reportPrediction(view,predictions.maxBy { it.score })
+                    reportPrediction(view,predictions.maxByOrNull { it.score })
 
 
                     // Compute the FPS of the entire pipeline
@@ -177,7 +177,7 @@ class CameraActivityViewModel(application: Application) : AndroidViewModel(appli
 
                 // Apply declared configs to CameraX using the same lifecycle owner
                 cameraProvider.unbindAll()
-                val camera = cameraProvider.bindToLifecycle(
+                cameraProvider.bindToLifecycle(
                      cameraActivity as LifecycleOwner, cameraSelector, preview, imageAnalysis)
 
                 // Use the camera object to link our preview use case with the view
